@@ -1,0 +1,43 @@
+#!/bin/sh
+# USB Gadget ECM - IP: 192.168.20.2
+# Host: sudo ip addr add 192.168.20.1/24 dev usb0 && ssh root@192.168.20.2
+
+start() {
+    mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config
+    cd /sys/kernel/config/usb_gadget/
+    mkdir -p g && cd g
+    echo 0x1d6b > idVendor
+    echo 0x0104 > idProduct
+    echo 0x0100 > bcdDevice
+    echo 0x0200 > bcdUSB
+    mkdir -p strings/0x409
+    echo "colorcreator001" > strings/0x409/serialnumber
+    echo "ColorCreator" > strings/0x409/manufacturer
+    echo "ColorCreator USB" > strings/0x409/product
+    mkdir -p configs/c.1/strings/0x409
+    echo "ECM" > configs/c.1/strings/0x409/configuration
+    echo 250 > configs/c.1/MaxPower
+    mkdir -p functions/ecm.usb0
+    ln -s functions/ecm.usb0 configs/c.1/
+    ls /sys/class/udc > UDC
+    sleep 2
+    ifconfig usb0 192.168.20.2 netmask 255.255.255.0 up
+    echo "USB: ssh root@192.168.20.2 (host: ip addr add 192.168.20.1/24 dev usb0)"
+}
+
+stop() {
+    ifconfig usb0 down 2>/dev/null
+    cd /sys/kernel/config/usb_gadget/g 2>/dev/null && {
+        echo "" > UDC
+        rm configs/c.1/ecm.usb0 2>/dev/null
+        rmdir configs/c.1/strings/0x409 configs/c.1 functions/ecm.usb0 strings/0x409 2>/dev/null
+        cd ..; rmdir g 2>/dev/null
+    }
+}
+
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; sleep 1; start ;;
+    *) echo "Usage: $0 {start|stop|restart}" ;;
+esac

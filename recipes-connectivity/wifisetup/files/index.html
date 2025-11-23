@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ColorCreator WiFi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+.c{background:#fff;border-radius:20px;padding:40px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+h1{color:#667eea;margin-bottom:10px}
+.s{color:#666;margin-bottom:30px;font-size:14px}
+.f{margin-bottom:20px}
+label{display:block;margin-bottom:8px;font-weight:500}
+input{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:16px}
+input:focus{outline:none;border-color:#667eea}
+button{width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer}
+button:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(102,126,234,.4)}
+.i{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:20px;font-size:13px}
+</style></head>
+<body><div class="c">
+<h1>🎨 ColorCreator</h1>
+<p class="s">WiFi Configuration</p>
+<form action="/cgi-bin/config.cgi" method="POST">
+<div class="f"><label>Network (SSID)</label><input type="text" name="ssid" required></div>
+<div class="f"><label>Password</label><input type="password" name="password" required></div>
+<button type="submit">Connect</button>
+</form>
+<div class="i"><strong>Current:</strong> AP Mode<br><strong>IP:</strong> 192.168.4.1<br><strong>SSID:</strong> system-t113</div>
+</div></body></html>
