@@ -6,7 +6,7 @@ Yocto/OpenEmbedded layer для сборки Linux образа ColorCreator н�
 
 ## Исправленные проблемы
 
-### ❌ Проблема: Зависание на "booting linux..."
+### ✅ Проблема: Зависание на "booting linux..."
 **Причина**: Отсутствовали правильные параметры консоли для UART.
 
 **Решение**:
@@ -14,13 +14,30 @@ Yocto/OpenEmbedded layer для сборки Linux образа ColorCreator н�
 - Создана конфигурация машины `conf/machine/lcpi-pc-t113.conf` с `SERIAL_CONSOLES`
 - Добавлен U-Boot скрипт `recipes-bsp/u-boot/files/boot.cmd` с правильными bootargs
 
-### ❌ Проблема: Создается сеть "test" вместо "system-t113"
+### ✅ Проблема: Создается сеть "test" вместо "system-t113"
 **Причина**: Файл `hostapd_%.bbappend.bak` был отключен (расширение .bak).
 
 **Решение**:
 - Переименован в `hostapd_%.bbappend` для активации
 - Теперь удаляется дефолтный hostapd.conf с ssid=test
 - Используется кастомная конфигурация из wifisetup
+
+### ✅ Проблема: WiFi не запускается автоматически при загрузке
+**Причина**: Отсутствовал `inherit update-rc.d` в рецепте wifisetup.
+
+**Решение**:
+- Добавлен `inherit update-rc.d` в `recipes-connectivity/wifisetup/wifisetup.bb`
+- Настроены `INITSCRIPT_NAME` и `INITSCRIPT_PARAMS`
+- Теперь создаются симлинки в `/etc/rc*.d/` для автоматического запуска
+
+### ✅ Проблема: USB Gadget не запускается автоматически при загрузке
+**Причина**: Отсутствовал `inherit update-rc.d` в рецепте usb-gadget.
+
+**Решение**:
+- Добавлен `inherit update-rc.d` в `recipes-connectivity/usb-gadget/usb-gadget.bb`
+- Заменён CDC ECM на RNDIS для лучшей совместимости с Windows
+- Добавлены Windows-специфичные дескрипторы RNDIS
+- Теперь создаются симлинки в `/etc/rc*.d/` для автоматического запуска
 
 ## Структура проекта
 
@@ -42,7 +59,7 @@ meta-colorcreator/
 │   ├── hostapd/
 │   │   └── hostapd_%.bbappend        # Удаление дефолтного hostapd
 │   ├── usb-gadget/
-│   │   └── usb-gadget.bb             # USB Gadget ECM для SSH
+│   │   └── usb-gadget.bb             # USB Gadget RNDIS для SSH
 │   └── wifisetup/
 │       └── wifisetup.bb              # Wi-Fi AP/Client с веб-интерфейсом
 └── recipes-core/
@@ -53,13 +70,15 @@ meta-colorcreator/
 ## Возможности образа
 
 ### Сетевые возможности
-- **Wi-Fi Access Point** (по умолчанию):
+- **Wi-Fi Access Point** (по умолчанию, автозапуск):
   - SSID: `system-t113`
   - Пароль: `i8o9p0U8`
   - IP: `192.168.4.1`
   - Веб-интерфейс: http://192.168.4.1
 - **Wi-Fi Client**: Подключение к существующей сети
-- **USB Gadget ECM**: SSH через USB (192.168.7.2)
+- **USB Gadget RNDIS** (автозапуск): SSH через USB (192.168.20.2)
+  - Windows: устройство определяется автоматически, настроить IP 192.168.20.1/24
+  - Linux: `sudo ip addr add 192.168.20.1/24 dev usb0`
 
 ### Установленные пакеты
 - Драйвер Wi-Fi: `rtl8189ftv`
@@ -127,10 +146,18 @@ sudo screen /dev/ttyUSB0 115200
 ssh root@192.168.4.1
 ```
 
-### SSH через USB Gadget
+### SSH через USB Gadget (RNDIS)
 ```bash
 # Подключите USB кабель к OTG порту платы
-ssh root@192.168.7.2
+
+# Windows:
+# 1. Устройство определится как "Удаленное NDIS-совместимое устройство"
+# 2. Настройте IP адрес: 192.168.20.1/24 (Control Panel → Network Connections → RNDIS adapter → Properties → IPv4)
+# 3. ssh root@192.168.20.2
+
+# Linux:
+sudo ip addr add 192.168.20.1/24 dev usb0
+ssh root@192.168.20.2
 ```
 
 ## Настройка Wi-Fi
