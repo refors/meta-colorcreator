@@ -1,6 +1,7 @@
 #!/bin/sh
-# USB Gadget ECM - IP: 192.168.20.2
-# Host: sudo ip addr add 192.168.20.1/24 dev usb0 && ssh root@192.168.20.2
+# USB Gadget RNDIS - IP: 192.168.20.2
+# Host (Windows): Configure adapter IP 192.168.20.1/24, then ssh root@192.168.20.2
+# Host (Linux): sudo ip addr add 192.168.20.1/24 dev usb0 && ssh root@192.168.20.2
 
 start() {
     mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config
@@ -15,22 +16,32 @@ start() {
     echo "ColorCreator" > strings/0x409/manufacturer
     echo "ColorCreator USB" > strings/0x409/product
     mkdir -p configs/c.1/strings/0x409
-    echo "ECM" > configs/c.1/strings/0x409/configuration
+    echo "RNDIS" > configs/c.1/strings/0x409/configuration
     echo 250 > configs/c.1/MaxPower
-    mkdir -p functions/ecm.usb0
-    ln -s functions/ecm.usb0 configs/c.1/
+
+    # Use RNDIS for Windows compatibility
+    mkdir -p functions/rndis.usb0
+
+    # Configure RNDIS for Windows
+    echo "RNDIS" > functions/rndis.usb0/os_desc/interface.rndis/compatible_id
+    echo "5162001" > functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id
+
+    ln -s functions/rndis.usb0 configs/c.1/
+    ln -s configs/c.1 os_desc/
+
     ls /sys/class/udc > UDC
     sleep 2
     ifconfig usb0 192.168.20.2 netmask 255.255.255.0 up
-    echo "USB: ssh root@192.168.20.2 (host: ip addr add 192.168.20.1/24 dev usb0)"
+    echo "USB RNDIS: ssh root@192.168.20.2 (Windows: set adapter IP to 192.168.20.1/24)"
 }
 
 stop() {
     ifconfig usb0 down 2>/dev/null
     cd /sys/kernel/config/usb_gadget/g 2>/dev/null && {
         echo "" > UDC
-        rm configs/c.1/ecm.usb0 2>/dev/null
-        rmdir configs/c.1/strings/0x409 configs/c.1 functions/ecm.usb0 strings/0x409 2>/dev/null
+        rm -f configs/c.1/rndis.usb0 2>/dev/null
+        rm -f os_desc/c.1 2>/dev/null
+        rmdir configs/c.1/strings/0x409 configs/c.1 functions/rndis.usb0 strings/0x409 2>/dev/null
         cd ..; rmdir g 2>/dev/null
     }
 }

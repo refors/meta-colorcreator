@@ -1,8 +1,13 @@
-SUMMARY = "USB Gadget ECM for SSH access"
+SUMMARY = "USB Gadget RNDIS for SSH access"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 SRC_URI = "file://S90usb-gadget"
 S = "${WORKDIR}"
+
+inherit update-rc.d
+
+INITSCRIPT_NAME = "S90usb-gadget"
+INITSCRIPT_PARAMS = "start 90 2 3 4 5 ."
 
 do_install() {
     install -d ${D}${sysconfdir}/init.d
