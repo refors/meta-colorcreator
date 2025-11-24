@@ -7,22 +7,95 @@
 body{font-family:system-ui;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
 .c{background:#fff;border-radius:20px;padding:40px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 h1{color:#667eea;margin-bottom:10px}
-.s{color:#666;margin-bottom:30px;font-size:14px}
+.s{color:#666;margin-bottom:20px;font-size:14px}
 .f{margin-bottom:20px}
 label{display:block;margin-bottom:8px;font-weight:500}
 input{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:16px}
 input:focus{outline:none;border-color:#667eea}
-button{width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer}
+button{width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:10px}
 button:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(102,126,234,.4)}
+.scan-btn{background:linear-gradient(135deg,#43cea2,#185a9d)}
 .i{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:20px;font-size:13px}
+.networks{max-height:300px;overflow-y:auto;margin-bottom:20px}
+.net{padding:12px;border:2px solid #e0e0e0;border-radius:10px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.net:hover{border-color:#667eea;background:#f8f9fa}
+.net.selected{border-color:#667eea;background:#e8eeff}
+.signal{font-size:20px}
+.hidden{display:none}
 </style></head>
 <body><div class="c">
 <h1>🎨 ColorCreator</h1>
 <p class="s">WiFi Configuration</p>
+
+<button class="scan-btn" onclick="scanNetworks()">📡 Scan Networks</button>
+
+<div id="networkList" class="networks hidden"></div>
+
 <form action="/cgi-bin/config.cgi" method="POST">
-<div class="f"><label>Network (SSID)</label><input type="text" name="ssid" required></div>
-<div class="f"><label>Password</label><input type="password" name="password" required></div>
+<div class="f"><label>Network (SSID)</label><input type="text" name="ssid" id="ssid" required></div>
+<div class="f hidden" id="passField"><label>Password</label><input type="password" name="password" id="password"></div>
 <button type="submit">Connect</button>
 </form>
+
 <div class="i"><strong>Current:</strong> AP Mode<br><strong>IP:</strong> 192.168.4.1<br><strong>SSID:</strong> system-t113</div>
-</div></body></html>
+</div>
+
+<script>
+let selectedSecurity = 'open';
+
+function scanNetworks() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '🔄 Scanning...';
+    
+    fetch('/cgi-bin/scan.cgi')
+        .then(r => r.json())
+        .then(networks => {
+            const list = document.getElementById('networkList');
+            list.innerHTML = '';
+            list.classList.remove('hidden');
+            
+            networks.sort((a,b) => b.signal - a.signal).forEach(net => {
+                if (!net.ssid) return;
+                const div = document.createElement('div');
+                div.className = 'net';
+                div.onclick = () => selectNetwork(net.ssid, net.security);
+                
+                const signal = net.signal > -50 ? '📶' : net.signal > -70 ? '📶' : '📡';
+                const lock = net.security !== 'open' ? '🔒' : '🔓';
+                
+                div.innerHTML = `<span>${lock} ${net.ssid}</span><span class="signal">${signal}</span>`;
+                list.appendChild(div);
+            });
+            
+            btn.disabled = false;
+            btn.textContent = '📡 Scan Networks';
+        })
+        .catch(e => {
+            alert('Scan failed: ' + e);
+            btn.disabled = false;
+            btn.textContent = '📡 Scan Networks';
+        });
+}
+
+function selectNetwork(ssid, security) {
+    document.querySelectorAll('.net').forEach(n => n.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    
+    document.getElementById('ssid').value = ssid;
+    selectedSecurity = security;
+    
+    const passField = document.getElementById('passField');
+    const passInput = document.getElementById('password');
+    
+    if (security !== 'open') {
+        passField.classList.remove('hidden');
+        passInput.required = true;
+    } else {
+        passField.classList.add('hidden');
+        passInput.required = false;
+        passInput.value = '';
+    }
+}
+</script>
+</body></html>

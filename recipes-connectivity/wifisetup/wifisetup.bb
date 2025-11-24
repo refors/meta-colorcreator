@@ -1,7 +1,7 @@
 SUMMARY = "WiFi Setup for ColorCreator"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
-SRC_URI = "file://wifisetup.sh file://S99wifi file://hostapd.conf file://dnsmasq.conf  file://index.html file://config.cgi"
+SRC_URI = "file://wifisetup.sh file://S99wifi file://hostapd.conf file://dnsmasq.conf file://index.html file://config.cgi file://scan.cgi"
 S = "${WORKDIR}"
 RDEPENDS_${PN} = "bash hostapd dnsmasq wpa-supplicant lighttpd iw"
 
@@ -24,5 +24,6 @@ do_install() {
     install -m 0644 ${WORKDIR}/index.html ${D}/var/www/html/
     install -d ${D}/var/www/cgi-bin
     install -m 0755 ${WORKDIR}/config.cgi ${D}/var/www/cgi-bin/
+    install -m 0755 ${WORKDIR}/scan.cgi ${D}/var/www/cgi-bin/
 }
 FILES_${PN} += "/var/www/html/* /var/www/cgi-bin/*"
