@@ -5,6 +5,11 @@ SRC_URI = "file://wifisetup.sh file://S99wifi file://hostapd.conf file://dnsmasq
 S = "${WORKDIR}"
 RDEPENDS_${PN} = "bash hostapd dnsmasq wpa-supplicant lighttpd iw"
 
+inherit update-rc.d
+
+INITSCRIPT_NAME = "S99wifi"
+INITSCRIPT_PARAMS = "start 99 2 3 4 5 ."
+
 do_install() {
     install -d ${D}${sbindir}
     install -m 0755 ${WORKDIR}/wifisetup.sh ${D}${sbindir}/
