@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ColorCreator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 560px;
+      width: 100%;
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 28px;
+      text-align: center;
+    }
+    .subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 22px;
+      font-size: 14px;
+    }
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 14px;
+      color: #1565c0;
+    }
+    .status-section {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+      gap: 12px;
+    }
+    .status-item:last-child { border-bottom: none; }
+    .status-label { color: #666; font-weight: 700; }
+    .status-value { color: #333; font-family: monospace; text-align: right; }
+    .ok { color: #2e7d32; font-weight: 800; }
+    .warn { color: #b00020; font-weight: 800; }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+    .btn-primary:hover, .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+    .btn-primary:disabled, .btn-danger:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .small {
+      font-size: 12px; color: #777; margin-top: 14px; line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 ColorCreator</h1>
+    <p class="subtitle">Device Status</p>
+    <div class="info-box" id="infobox">ℹ️ Loading…</div>
+    <div class="status-section">
+      <div class="status-item">
+        <span class="status-label">Mode:</span>
+        <span class="status-value" id="modeVal">Loading…</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Network (SSID):</span>
+        <span class="status-value" id="ssid">Loading…</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">IP Address:</span>
+        <span class="status-value" id="ipaddr">Loading…</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Signal:</span>
+        <span class="status-value" id="signal">Loading…</span>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="refreshStatus()">🔄 Refresh</button>
+    <button class="btn-danger" id="apBtn" onclick="switchToAP()">📡 Switch to Access Point</button>
+    <div class="small">Main UI will live here. For now you can switch back to AP mode if needed.</div>
+    <div id="status" style="margin-top: 16px;"></div>
+  </div>
+<script>
+  const infobox = document.getElementById('infobox');
+  const modeVal = document.getElementById('modeVal');
+  const apBtn = document.getElementById('apBtn');
+  function setInfo(text, kind){
+    infobox.textContent = text;
+    infobox.style.borderLeftColor = (kind === 'ok') ? '#2e7d32' : (kind === 'warn' ? '#b00020' : '#2196f3');
+    infobox.style.color = (kind === 'ok') ? '#1b5e20' : (kind === 'warn' ? '#7f0013' : '#1565c0');
+    infobox.style.background = (kind === 'ok') ? '#e9fff0' : (kind === 'warn' ? '#ffebee' : '#e3f2fd');
+  }
+  function loadStatus() {
+    fetch('/cgi-bin/status.cgi?ts=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        const mode = d.mode || 'ap';
+        modeVal.textContent = mode === 'client' ? 'Client Mode' : 'AP Mode';
+        modeVal.className = 'status-value ' + (mode === 'client' ? 'ok' : 'warn');
+        document.getElementById('ssid').textContent = d.ssid || 'Unknown';
+        document.getElementById('ipaddr').textContent = d.ip || 'Unknown';
+        document.getElementById('signal').textContent = (d.signal === null || d.signal === undefined) ? 'Unknown' : (d.signal + ' dBm');
+        if (mode === 'client' && d.ip) {
+          setInfo('✅ Device is connected to Wi-Fi', 'ok');
+          apBtn.disabled = false;
+        } else {
+          setInfo('📡 Device is in Access Point mode. Open Wi-Fi setup.', 'warn');
+          apBtn.disabled = true;
+        }
+      })
+      .catch(e => {
+        console.error(e);
+        setInfo('⚠️ Failed to load status', 'warn');
+      });
+  }
+  function refreshStatus(){ loadStatus(); }
+  function switchToAP() {
+    if (!confirm('Switch back to Access Point mode? You will be disconnected from current network.')) return;
+    fetch('/cgi-bin/switch-mode.cgi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'mode=ap'
+    })
+    .then(r => r.text())
+    .then(html => { document.open(); document.write(html); document.close(); })
+    .catch(() => {
+      document.getElementById('status').innerHTML =
+        '<div style="color:#b00020;padding:10px;background:#ffebee;border-radius:8px;">Failed to switch mode</div>';
+    });
+  }
+  loadStatus();
+  setInterval(loadStatus, 10000);
+</script>
+</body>
+</html>

@@ -1,7 +1,42 @@
 #!/bin/sh
+### BEGIN INIT INFO
+# Provides:          wifisetup
+# Required-Start:    $network $remote_fs $syslog
+# Required-Stop:     $network $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: WiFi setup for ColorCreator
+### END INIT INFO
+
+wait_for_interface() {
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if [ -d /sys/class/net/wlan0 ]; then
+            return 0
+        fi
+        sleep 0.5
+    done
+    return 1
+}
+
 case "$1" in
-    start) /usr/sbin/wifisetup.sh start ;;
-    stop) /usr/sbin/wifisetup.sh stop ;;
-    restart) /usr/sbin/wifisetup.sh restart ;;
-    *) echo "Usage: $0 {start|stop|restart}" ;;
+    start)
+        if wait_for_interface; then
+            /usr/sbin/wifisetup.sh start
+        else
+            echo "wlan0 interface not found"
+            exit 1
+        fi
+        ;;
+    stop)
+        /usr/sbin/wifisetup.sh stop
+        ;;
+    restart)
+        /usr/sbin/wifisetup.sh restart
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
 esac
+
+exit 0

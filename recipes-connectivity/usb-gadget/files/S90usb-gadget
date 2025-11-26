@@ -3,40 +3,62 @@
 # Host (Windows): Configure adapter IP 192.168.20.1/24, then ssh root@192.168.20.2
 # Host (Linux): sudo ip addr add 192.168.20.1/24 dev usb0 && ssh root@192.168.20.2
 
+wait_for_usb0() {
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if ip link show usb0 >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 0.2
+    done
+    echo "Warning: usb0 interface not ready"
+    return 1
+}
+
 start() {
     mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config
-    cd /sys/kernel/config/usb_gadget/
-    mkdir -p g && cd g
+    
+    cd /sys/kernel/config/usb_gadget/ || exit 1
+    
+    mkdir -p g && cd g || exit 1
+    
     echo 0x1d6b > idVendor
     echo 0x0104 > idProduct
     echo 0x0100 > bcdDevice
     echo 0x0200 > bcdUSB
+    
     mkdir -p strings/0x409
     echo "colorcreator001" > strings/0x409/serialnumber
     echo "ColorCreator" > strings/0x409/manufacturer
     echo "ColorCreator USB" > strings/0x409/product
+    
     mkdir -p configs/c.1/strings/0x409
     echo "RNDIS" > configs/c.1/strings/0x409/configuration
     echo 250 > configs/c.1/MaxPower
-
+    
     # Use RNDIS for Windows compatibility
     mkdir -p functions/rndis.usb0
-
+    
     # Configure RNDIS for Windows
     echo "RNDIS" > functions/rndis.usb0/os_desc/interface.rndis/compatible_id
     echo "5162001" > functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id
-
+    
     ln -s functions/rndis.usb0 configs/c.1/
     ln -s configs/c.1 os_desc/
-
+    
     ls /sys/class/udc > UDC
-    sleep 2
-    ifconfig usb0 192.168.20.2 netmask 255.255.255.0 up
-    echo "USB RNDIS: ssh root@192.168.20.2 (Windows: set adapter IP to 192.168.20.1/24)"
+    
+    # Wait for interface instead of blind sleep
+    if wait_for_usb0; then
+        ifconfig usb0 192.168.20.2 netmask 255.255.255.0 up
+        echo "USB RNDIS ready: ssh root@192.168.20.2 (Windows: set adapter IP to 192.168.20.1/24)"
+    else
+        echo "USB RNDIS: usb0 interface timeout"
+    fi
 }
 
 stop() {
     ifconfig usb0 down 2>/dev/null
+    
     cd /sys/kernel/config/usb_gadget/g 2>/dev/null && {
         echo "" > UDC
         rm -f configs/c.1/rndis.usb0 2>/dev/null
@@ -49,6 +71,6 @@ stop() {
 case "$1" in
     start) start ;;
     stop) stop ;;
-    restart) stop; sleep 1; start ;;
+    restart) stop; start ;;
     *) echo "Usage: $0 {start|stop|restart}" ;;
 esac

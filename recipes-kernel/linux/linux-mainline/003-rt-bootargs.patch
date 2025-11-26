@@ -1,0 +1,13 @@
+diff --git a/arch/arm/boot/dts/allwinner/sun8i-t113-mangopi-dual.dts b/arch/arm/boot/dts/allwinner/sun8i-t113-mangopi-dual.dts
+index 2acf251..xxxxx 100644
+--- a/arch/arm/boot/dts/allwinner/sun8i-t113-mangopi-dual.dts
++++ b/arch/arm/boot/dts/allwinner/sun8i-t113-mangopi-dual.dts
+@@ -20,7 +20,7 @@
+ 
+    chosen {
+ 		stdout-path = "serial0:115200n8";
+-       bootargs = "mem=128M cma=64M root=/dev/mmcblk0p2 rootwait console=ttyS0,115200 earlyprintk=sunxi-uart,0x2500000";
++       bootargs = "mem=128M cma=64M root=/dev/mmcblk0p2 rootwait console=ttyS0,115200 earlyprintk=sunxi-uart,0x2500000 isolcpus=1 nohz_full=1 rcu_nocbs=1 cpufreq.default_governor=performance";
+    };
+ 
+ 	reg_vcc: vcc {
